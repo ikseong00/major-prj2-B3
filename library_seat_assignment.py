@@ -32,9 +32,9 @@ RETURN = "return" ### 요구사항 F
 
 MAX_CUMULATIVE_USAGE_TIME_PER_DAY = 5 ### 요구사항 F. 이변수로 하루 5시간 이하로 이용할 수 있도록 제한
 
-MAX_USERS_PER_DAY = 3           ### 요구사항 E [3차 요구사항 대비] 전역 변수로 관리해서 관리자가 수정할 수 있음
+MAX_USES_PER_DAY = 3           ### 요구사항 E [3차 요구사항 대비] 전역 변수로 관리해서 관리자가 수정할 수 있음
 MAX_RECENT_USAGE_DAY = 5       ### 요구사항 D [3차 요구사항 대비] 전역 변수로 관리해서 관리자가 수정할 수 있음
-RECENT_DAYS = 7 ### 요구사항 D [3차 요구사항 대비] 전역 변수로 관리해서 관리자가 수정할 수 있음
+DAYS_FOR_RECENT_USAGE_CHECK = 7 ### 요구사항 D [3차 요구사항 대비] 전역 변수로 관리해서 관리자가 수정할 수 있음
 
 reading_room_list = []
 recent_input_time = ""
@@ -610,8 +610,9 @@ class LibrarySystem:
                         reservation_date = datetime.datetime.strptime(record[3], "%Y-%m-%d %H:%M").date()
                         if reservation_date == current_date:  # 같은 날짜의 기록만 카운트
                             usage_count += 1
-        if usage_count >= MAX_USERS_PER_DAY:
-            print(f"하루에 최대 {MAX_USERS_PER_DAY}번만 좌석을 배정할 수 있습니다.")
+        if usage_count >= MAX_USES_PER_DAY:
+            # print(f"하루에 최대 {MAX_USERS_PER_DAY}번만 좌석을 배정할 수 있습니다.")
+            print(f"좌석 배정은 하루에 최대 {MAX_USES_PER_DAY}회만 가능합니다.")
             return True  
         return False
 
@@ -631,14 +632,14 @@ class LibrarySystem:
                 if record != []:
                     if record[0] == self.user.student_id and record[4] == RESERVE: # 배정 플래그 확인
                         reservation_date = datetime.datetime.strptime(record[3], "%Y-%m-%d %H:%M").date()
-                        if reservation_date > today - datetime.timedelta(days = RECENT_DAYS):
+                        if reservation_date > today - datetime.timedelta(days = DAYS_FOR_RECENT_USAGE_CHECK):
                             # print("debug : reservation_date =", reservation_date)
                             recent_reservations.append(reservation_date)
 
         # print("debug : recent_reservations = ", recent_reservations)
         recent_usage_day = len(set(recent_reservations))
         if recent_usage_day >= MAX_RECENT_USAGE_DAY:
-            print("연속된 7일 기간 내에 5일을 초과하여 좌석을 배정할 수 없습니다.")
+            print(f"연속된 {DAYS_FOR_RECENT_USAGE_CHECK}일 기간 내에 {MAX_RECENT_USAGE_DAY}일을 초과하여 좌석을 배정할 수 없습니다.")
             return True
         return False
 
@@ -648,7 +649,7 @@ class LibrarySystem:
         오늘 하루 5시간 넘게 사용했는지 확인하는 함수
         '''
         if self.get_user_usage_time_at_date(user_id, recent_input_time) >= MAX_CUMULATIVE_USAGE_TIME_PER_DAY * 60 * 60: ## 요구사항 2F 구현
-            print("하루에 좌석을 5시간만 이용 가능...")
+            print(f"좌석 이용은 하루에 {MAX_CUMULATIVE_USAGE_TIME_PER_DAY}시간만 이용 가능합니다.")
             return True
         return False
 
