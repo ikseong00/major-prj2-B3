@@ -170,15 +170,58 @@ class Admin:
             # 작업 완료 후 관리자 프롬프트로 복귀
             return
 
-    # 열람실 추가
+    '''
+    열람실 여러개 한 번에 추가 가능 
+    '''
     def add_room(self):
         # print("열람실 추가")
         while True:
             load_reading_room_data()
+            now_seats = library_system.get_seats()
             print("열람실 리스트 : ", reading_room_list)
+            new_room_num = int(input("추가할 열람실 개수: ")) 
+            #### 오류 처리에 사용 
+            default_assignment_time = '0000-10-29 10:31'
+            default_id = '201000000'
 
-            new_room_info = input("추가할 열람실 정보 입력(열람실 번호, 최대 좌석 수, 자동 생성할 좌석 개수) > ")
-            room_info_parts = new_room_info.split()
+
+            new_room_info = input("추가할 열람실 정보 입력(열람실 번호, 최대 좌석 수, 자동 생성할 좌석 개수 , 열람실 번호) > ") 
+            ### 1 10 5, 2 30 20 등의 ,와 공백 기준으로 여러개의 열람실 입력 받기 가능
+            room_info_parts = [x.strip() for x in new_room_info.split(',')]
+            ### ,로 열람실 정보 구분. 
+            if len(room_info_parts) != new_room_num: ### 처음 입력한 '추가할 열람실 개수'와 실제로 입력한 정보개수가 일치하는 지 확인 
+                print("추가할 열람실 정보가 맞지 않습니다.")
+                break
+            result=[]
+            ### str과 공백이 함께 저장된 열람실 정보를 int형 배열로 다시 저장하기 위한 변수 
+            for item in room_info_parts:
+                n = [int(num) for num in item.split()] ### int배열 정보로 전환 
+                result.append(n) ### 각 열람실 정보를 2차원 배열 형태로 저장 
+
+            for item in result: ### result안에 들어간 각 열람실 정보 접근 
+                room_number, max_seats, auto_generate_seats = map(int, item) ### 하나의 열람실 정보 접근, 각 정보 매핑 
+                if re.match(READING_ROOM_NUMBER_SYNTAX_PATTERN, str(room_number)) == None:
+                    # print("열람실 번호의 문법 규칙이 어긋났습니다.")
+                    # continue
+                    return
+                if room_number in [room[0] for room in reading_room_list]:
+                    # print("이미 존재하는 열람실입니다.")
+                    # continue 
+                    return
+                elif max_seats < auto_generate_seats:
+                    # print("최대 좌석 수보다 자동 생성할 좌석 개수가 많습니다.")
+                    # continue
+                    return 
+                reading_room_list.append([room_number, max_seats]) ### 열람실 추가 
+                for generate_seats_num in range(1, auto_generate_seats+1): ### 좌석 생성
+                    now_seats.append([generate_seats_num, room_number, 'O', default_assignment_time, default_id])
+                    
+                    library_system.seats = now_seats
+                library_system.save_seat_data()
+                self.save_reading_room_data()
+            break
+    ''' 열람실 하나씩 추가 가능
+            print(result)
             if len((room_info_parts)) != 3:
                 print("세 개의 값을 입력해야 합니다.")
                 continue # 입력한 정보가 올바르지 않은 경우 
@@ -188,8 +231,7 @@ class Admin:
                 print("열람실 번호의 문법 규칙이 어긋났습니다.")
                 continue
 
-            default_assignment_time = '0000-10-29 10:31'
-            default_id = '201000000'
+            
 
             if room_number in [room[0] for room in reading_room_list]:
                 print("이미 존재하는 열람실입니다.")
@@ -198,7 +240,7 @@ class Admin:
                 print("최대 좌석 수보다 자동 생성할 좌석 개수가 많습니다.")
                 continue
             else:
-                now_seats = library_system.get_seats()
+                
                 ### 불필요한 로직 제거, save_reading_room_data() 사용
                 reading_room_list.append([room_number, max_seats])
                 self.save_reading_room_data()
@@ -210,7 +252,7 @@ class Admin:
                 library_system.save_seat_data()
 
                 break 
-    
+    '''
     def remove_room(self):
         global reading_room_list
         # 열람실 삭제
@@ -226,13 +268,15 @@ class Admin:
             seats = library_system.get_seats()
             exists = any(room_list[0] == remove_room_num for room_list in reading_room_list) # 사용자에게 입력받은 열람실 번호가 존재하는 지 확인 
             if not exists:
-                print("해당 열람실은 존재하지 않습니다.")
-                break
+                # print("해당 열람실은 존재하지 않습니다.")
+                # break
+                return
             for seat in seats:
                 ###### after merge :  조건문 수정
                 if seat[1]==remove_room_num and seat[2] == "X": 
-                    print("현재 사용 중인 좌석이 존재합니다.")
-                    break
+                    # print("현재 사용 중인 좌석이 존재합니다.")
+                    # break
+                    return 
             else:
                 ### 불필요한 로직 제거, save_reading_room_data() 
                 reading_room_list = [
